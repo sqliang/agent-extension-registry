@@ -1,0 +1,10 @@
+schemaVersion: 1
+id: ai-coding
+version: 1.0.0
+status: beta
+description: Git workflow, staged commits, and repository insight for AI coding.
+plugins:
+  - id: git-workflow
+    version: ^1.0.0
+  - id: repo-insight
+    version: ^1.0.0

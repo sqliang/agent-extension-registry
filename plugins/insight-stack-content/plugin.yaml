@@ -1,0 +1,16 @@
+schemaVersion: 1
+id: insight-stack-content
+version: 1.0.0
+status: beta
+description: Markdown metadata and Obsidian linking workflows for content creation.
+components:
+  - id: markdown-frontmatter-engine
+    version: ^1.0.0
+  - id: obsidian-smart-links
+    version: ^1.0.0
+  - id: obsidian-links-status
+    version: ^1.0.0
+  - id: obsidian-links-search
+    version: ^1.0.0
+  - id: obsidian-links-context
+    version: ^1.0.0

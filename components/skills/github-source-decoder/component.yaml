@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: github-source-decoder
+kind: skill
+version: 1.0.0
+status: deprecated
+description: Deprecated legacy repository analysis workflow; use repo-insight.
+entry: SKILL.md
+invocation: explicit
+targets: [codex, claude, cursor]
+dependencies:
+  external:
+    - command: python3
+      required: true
+      description: Python 3 runtime for legacy scripts.

@@ -1,0 +1,8 @@
+schemaVersion: 1
+id: pdf-reader
+version: 1.0.0
+status: beta
+description: PDF extraction, OCR fallback, and structured Markdown output.
+components:
+  - id: pdf-reader
+    version: ^1.0.0

@@ -1,0 +1,8 @@
+schemaVersion: 1
+id: insight-stack-content
+version: 1.0.0
+status: beta
+description: Frontmatter and reviewed Obsidian Smart Links for knowledge content.
+plugins:
+  - id: insight-stack-content
+    version: ^1.0.0

@@ -1,0 +1,17 @@
+{
+  "name": "@sqliang/agent-ext-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "dependencies": {
+    "@sqliang/agent-ext-adapter-claude": "workspace:*",
+    "@sqliang/agent-ext-adapter-codex": "workspace:*",
+    "@sqliang/agent-ext-adapter-cursor": "workspace:*",
+    "@sqliang/agent-ext-schemas": "workspace:*",
+    "semver": "^7.7.2",
+    "tar": "^7.4.3"
+  }
+}

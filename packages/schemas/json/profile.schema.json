@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sqliang/agent-extension-registry/schemas/profile.schema.json",
+  "title": "Agent Extension Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "version", "status", "description"],
+  "anyOf": [
+    { "required": ["components"] },
+    { "required": ["plugins"] }
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "version": { "type": "string" },
+    "status": { "enum": ["experimental", "beta", "stable", "deprecated"] },
+    "description": { "type": "string", "minLength": 1 },
+    "components": { "type": "array", "items": { "$ref": "#/$defs/reference" } },
+    "plugins": { "type": "array", "items": { "$ref": "#/$defs/reference" } }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "optional": { "type": "boolean" }
+      }
+    }
+  }
+}

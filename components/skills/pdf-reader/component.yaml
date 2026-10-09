@@ -1,0 +1,26 @@
+schemaVersion: 1
+id: pdf-reader
+kind: skill
+version: 1.0.0
+status: beta
+description: PDF extraction with optional OCR fallback.
+entry: SKILL.md
+invocation: automatic
+targets: [codex, claude, cursor]
+dependencies:
+  external:
+    - command: python3
+      required: true
+      description: Python 3 runtime.
+    - command: uv
+      required: false
+      description: Recommended Python tool runner.
+    - command: markitdown
+      required: false
+      description: Text PDF conversion.
+    - command: pdftoppm
+      required: false
+      description: Poppler PDF image renderer for OCR.
+    - command: tesseract
+      required: false
+      description: OCR engine for scanned PDFs.
