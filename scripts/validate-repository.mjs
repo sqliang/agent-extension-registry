@@ -18,7 +18,7 @@ for (const item of items) {
   const skillPath = join(item.directory, "SKILL.md");
   try { await access(skillPath); } catch { errors.push(`${relative(root, item.directory)}: missing SKILL.md`); continue; }
   const text = await readFile(skillPath, "utf8");
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text);
   if (!match) { errors.push(`${relative(root, skillPath)}: invalid or missing YAML frontmatter`); continue; }
   const frontmatter = parseYaml(match[1]);
   if (frontmatter.name !== item.manifest.id) errors.push(`${relative(root, skillPath)}: name must match component id`);
