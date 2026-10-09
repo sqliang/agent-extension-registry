@@ -56,7 +56,7 @@ for (const smoke of [
   "components/skills/markdown-frontmatter-engine/scripts/batch_ops.py",
   "components/skills/obsidian-smart-links/scripts/analyze_links.py"
 ]) {
-  try { await execFileAsync("python3", [join(root, smoke), "--help"]); }
+  try { await execFileAsync("python3", [join(root, smoke), "--help"], { env: { ...process.env, PYTHONUTF8: "1" } }); }
   catch (error) { errors.push(`${smoke} --help failed: ${error.stderr || error.message}`); }
 }
 
