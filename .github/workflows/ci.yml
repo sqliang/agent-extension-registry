@@ -53,5 +53,5 @@ jobs:
         shell: bash
         run: |
           while IFS= read -r plugin; do
-            claude plugin validate "$(dirname "$plugin")"
+            claude plugin validate "$(dirname "$(dirname "$plugin")")"
           done < <(find dist/projections -path '*/claude/.claude-plugin/plugin.json' -print)
