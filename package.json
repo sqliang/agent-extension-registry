@@ -4,7 +4,7 @@
   "private": true,
   "description": "Versioned registry and installer for reusable agent extensions.",
   "license": "MIT",
-  "packageManager": "pnpm@11.22.0",
+  "packageManager": "pnpm@10.34.6",
   "engines": {
     "node": ">=20"
   },
