@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: markdown-frontmatter-engine
+kind: skill
+version: 1.0.0
+status: beta
+description: Schema-driven Markdown frontmatter analysis and editing.
+entry: SKILL.md
+invocation: automatic
+targets: [codex, claude, cursor]
+dependencies:
+  external:
+    - command: python3
+      required: true
+      description: Python 3 runtime for the bundled scripts.

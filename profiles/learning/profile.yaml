@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: learning
+version: 1.0.0
+status: beta
+description: PDF reading and structured frontmatter for daily learning.
+plugins:
+  - id: pdf-reader
+    version: ^1.0.0
+components:
+  - id: markdown-frontmatter-engine
+    version: ^1.0.0

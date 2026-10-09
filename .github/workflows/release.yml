@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "component/*/v*"
+      - "plugin/*/v*"
+      - "profile/*/v*"
+      - "cli/v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm validate && pnpm test && pnpm build
+      - name: Package projections
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          while IFS= read -r manifest; do
+            dir="$(dirname "$manifest")"
+            kind="$(echo "$dir" | cut -d/ -f3)"
+            id="$(echo "$dir" | cut -d/ -f4)"
+            version="$(echo "$dir" | cut -d/ -f5)"
+            target="$(echo "$dir" | cut -d/ -f6)"
+            name="${kind}-${id}-v${version}-${target}"
+            tar -C "$dir" -czf "release-assets/${name}.tar.gz" .
+            (cd "$dir" && zip -qr "$GITHUB_WORKSPACE/release-assets/${name}.zip" .)
+          done < <(find dist/projections -name plugin.json -not -path '*/.*-plugin/*' -print)
+          find dist/components -type f \( -name '*.tar.gz' -o -name '*.tar.gz.sha256' \) -exec cp {} release-assets/ \;
+          cp dist/catalog.json release-assets/catalog.json
+          (cd release-assets && sha256sum * > SHA256SUMS)
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+
+  npm:
+    if: startsWith(github.ref_name, 'cli/v')
+    needs: artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - name: Set CLI version from tag
+        working-directory: packages/cli
+        run: npm pkg set version="${GITHUB_REF_NAME#cli/v}"
+      - run: pnpm build
+      - run: pnpm --filter @sqliang/agent-ext publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

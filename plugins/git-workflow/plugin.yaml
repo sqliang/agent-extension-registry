@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: git-workflow
+version: 1.0.0
+status: beta
+description: Git branch and staged-commit workflows for AI coding projects.
+components:
+  - id: git-workflow
+    version: ^1.0.1
+  - id: commit-added
+    version: ^1.0.0
+  - id: commit-code
+    version: ^1.0.0

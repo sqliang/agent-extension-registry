@@ -1,0 +1,8 @@
+schemaVersion: 1
+id: repo-insight
+version: 1.0.0
+status: beta
+description: Evidence-backed repository analysis without the deprecated decoder.
+components:
+  - id: repo-insight
+    version: ^1.0.0
