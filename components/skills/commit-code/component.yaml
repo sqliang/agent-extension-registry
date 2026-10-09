@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: commit-code
+kind: skill
+version: 1.0.0
+status: beta
+description: Explicit Conventional Commit workflow with optional changelog handling.
+entry: SKILL.md
+invocation: explicit
+targets: [codex, claude, cursor]
+dependencies:
+  external:
+    - command: git
+      required: true
+      description: Git command-line client.

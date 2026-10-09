@@ -1,0 +1,29 @@
+{
+  "name": "agent-extension-registry",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Versioned registry and installer for reusable agent extensions.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -b && node scripts/build-cli.mjs && node scripts/build-artifacts.mjs && node scripts/validate-artifacts.mjs",
+    "clean": "node scripts/clean.mjs",
+    "test": "pnpm run build:packages && node scripts/run-tests.mjs",
+    "build:packages": "tsc -b",
+    "validate": "pnpm run build:packages && node scripts/validate-repository.mjs",
+    "catalog": "pnpm run build:packages && node scripts/build-artifacts.mjs",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/semver": "^7.7.0",
+    "esbuild": "^0.25.0",
+    "semver": "^7.7.2",
+    "tar": "^7.4.3",
+    "typescript": "^5.9.0",
+    "yaml": "^2.8.1"
+  }
+}

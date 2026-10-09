@@ -1,0 +1,13 @@
+schemaVersion: 1
+id: obsidian-links-status
+kind: skill
+version: 1.0.0
+status: beta
+description: Explicitly inspect links and headings for an Obsidian note.
+entry: SKILL.md
+invocation: explicit
+targets: [codex, claude, cursor]
+dependencies:
+  components:
+    - id: obsidian-smart-links
+      version: ^1.0.0

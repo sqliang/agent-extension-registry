@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: git-workflow
+kind: skill
+version: 1.0.1
+status: beta
+description: Safe Git branch, synchronization, commit, and push workflow guidance.
+entry: SKILL.md
+invocation: automatic
+targets: [codex, claude, cursor]
+dependencies:
+  external:
+    - command: git
+      required: true
+      description: Git command-line client.

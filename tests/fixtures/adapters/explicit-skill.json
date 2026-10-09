@@ -1,0 +1,17 @@
+{
+  "codex": {
+    "paths": [
+      ".agents/skills/commit-added/SKILL.md",
+      ".agents/skills/commit-added/agents/openai.yaml"
+    ],
+    "contains": "allow_implicit_invocation: false"
+  },
+  "claude": {
+    "paths": [".claude/skills/commit-added/SKILL.md"],
+    "contains": "disable-model-invocation: true"
+  },
+  "cursor": {
+    "paths": [".cursor/skills/commit-added/SKILL.md"],
+    "contains": "disable-model-invocation: true"
+  }
+}

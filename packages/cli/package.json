@@ -1,0 +1,19 @@
+{
+  "name": "@sqliang/agent-ext",
+  "version": "0.1.0",
+  "description": "Install versioned agent extensions into Codex, Claude Code, and Cursor projects.",
+  "license": "MIT",
+  "type": "module",
+  "main": "publish/agent-ext.cjs",
+  "bin": { "agent-ext": "publish/agent-ext.cjs" },
+  "files": ["publish", "README.md"],
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
+  "devDependencies": {
+    "@sqliang/agent-ext-core": "workspace:*",
+    "@sqliang/agent-ext-schemas": "workspace:*"
+  },
+  "scripts": {
+    "prepack": "node ../../scripts/build-cli.mjs"
+  }
+}
