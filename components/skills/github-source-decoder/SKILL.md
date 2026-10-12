@@ -12,6 +12,5 @@ description: 旧版仓库源码解读工作流，仅在用户明确要求使用�
 - `scripts/scanner.py`：生成结构化仓库扫描结果。
 - `scripts/analyze_repo.py`：执行旧版分析流程。
 - `references/comment-guide.md`：中文注释边界。
-- `references/design_v1.0.0.md`：遗留设计说明。
 
 不得把分析请求自动扩展为源码改写；报告输出位置必须由用户或当前项目上下文确定。
