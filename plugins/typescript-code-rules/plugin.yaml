@@ -1,0 +1,8 @@
+schemaVersion: 1
+id: typescript-code-rules
+version: 1.0.0
+status: beta
+description: TypeScript coding rules skill with ESLint config generation, review checklist, and lint runner.
+components:
+  - id: typescript-code-rules
+    version: ^1.0.0
