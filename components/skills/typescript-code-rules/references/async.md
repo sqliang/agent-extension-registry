@@ -1,6 +1,6 @@
 # 异步与 Promise 规范
 
-本文件覆盖异步与 Promise 相关规则：禁 `await` 非 thenable 值、漂浮 Promise、Promise 误用于条件判断、void 表达式位置、无意义的 void 运算符。
+本文件覆盖异步与 Promise：禁 `await` 非 thenable 值、漂浮 Promise、Promise 误用、void 表达式、`async/await` 风格，以及独立 IO 的并发和 Promise 组合器选择。
 
 ### [强制] 禁止 await 非 thenable 的值
 
@@ -40,7 +40,9 @@ ESLint: `@typescript-eslint/no-floating-promises` · [官方文档](https://type
 
 ```ts
 // good
-const promise = new Promise<string>((resolve) => resolve('value'));
+const promise = new Promise<string>((resolve) => {
+  resolve('value');
+});
 await promise;
 
 async function returnsPromise() {
@@ -53,7 +55,7 @@ returnsPromise().then(
 );
 
 Promise.reject('value').catch(() => {});
-Promise.reject('value').finally(() => {});
+Promise.reject('value').catch(() => {}).finally(() => {});
 ```
 
 ```ts
@@ -91,8 +93,8 @@ if (await promise) {
 
 const val = (await promise) ? 123 : 456;
 
-while (await promise) {
-  // ...
+while (await hasMore()) {
+  await processNext();
 }
 ```
 
@@ -125,9 +127,12 @@ ESLint: `@typescript-eslint/no-confusing-void-expression` · [官方文档](http
 // good
 alert('Hello, world!');
 
-promise.then(value => {
-  window.postMessage(value); // 用花括号包住，不隐式返回
-});
+promise.then(
+  value => {
+    window.postMessage(value); // 用花括号包住，不隐式返回
+  },
+  () => {},
+);
 
 function doSomething() {
   if (!somethingToDo) {
@@ -173,11 +178,10 @@ function foo() {}
 foo(); // 返回值本来就是 void，无需丢弃
 
 function bar(x: number) {
-  void x; // 显式丢弃一个 number
-  return 2;
+  return x + 1;
 }
 
-void bar(); // 丢弃一个 number 返回值
+void bar(1); // 显式丢弃一个 number 返回值
 ```
 
 ```ts
@@ -186,4 +190,61 @@ void (() => {})(); // IIFE 返回 void，void 多余
 
 function foo() {}
 void foo(); // foo 本来就返回 void，void 多余
+```
+
+### [规范] 异步流程优先使用 async/await 表达
+
+顺序依赖、条件分支和错误处理较复杂时，`async/await` 通常比深层回调或 Promise 链更清晰。简单的一次性转换可直接返回 Promise，避免无意义的包装。
+
+```ts
+// good
+async function loadReport(id: string) {
+  try {
+    const report = await fetchReport(id);
+    if (!validateReport(report)) {
+      throw new Error('Invalid report');
+    }
+    return validateReport(report);
+  } catch {
+    return false;
+  }
+}
+```
+
+```ts
+// bad
+function loadReport(id: string) {
+  return fetchReport(id)
+    .then(report => {
+      if (!validateReport(report)) {
+        return Promise.reject(new Error('Invalid report'));
+      }
+      return report;
+    })
+    .then(report => validateReport(report))
+    .catch(() => false);
+}
+```
+
+### [规范] 独立 IO 并发执行并按结果语义选择 Promise 组合器
+
+没有数据依赖的 IO 不应仅为了书写方便而串行化。全部成功才有意义时使用 `Promise.all`；需要观察每个结果、允许部分失败时使用 `Promise.allSettled`。存在数据依赖、限流、事务顺序或共享资源约束时仍应串行或限制并发。
+
+```ts
+// good
+const [tags, articles] = await Promise.all([
+  requestTags(),
+  requestArticles(),
+]);
+
+const results = await Promise.allSettled([
+  requestPrimaryMirror(),
+  requestSecondaryMirror(),
+]);
+```
+
+```ts
+// bad
+const tags = await requestTags();
+const articles = await requestArticles();
 ```

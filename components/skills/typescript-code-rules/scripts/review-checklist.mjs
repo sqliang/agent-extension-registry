@@ -28,6 +28,9 @@ const CATEGORY_LABELS = {
   modules: '模块',
   async: '异步与 Promise',
   enums: '枚举',
+  'variables-functions': '变量与函数',
+  style: '风格与注释',
+  browser: '浏览器环境',
 };
 
 const LEVEL_ORDER = { error: 0, warn: 1, style: 2 };
@@ -37,7 +40,7 @@ const USAGE = `用法: node review-checklist.mjs [--level error|warn|style] [--c
 
 选项:
   --level error     只输出强制项
-  --category <类别>  只输出某个类别（naming/types/assertions/arrays-objects/control-flow/classes/modules/async/enums）
+  --category <类别>  只输出某个类别（naming/types/assertions/arrays-objects/control-flow/classes/modules/async/enums/variables-functions/style/browser）
 
 默认输出全部规则的 Markdown 核查清单到 stdout。`;
 
@@ -52,8 +55,21 @@ function main() {
   let levelFilter = null;
   let categoryFilter = null;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--level') levelFilter = args[++i];
-    if (args[i] === '--category') categoryFilter = args[++i];
+    const option = args[i];
+    if (option !== '--level' && option !== '--category') {
+      console.error(`错误: 未知选项 ${option}`);
+      console.error(USAGE);
+      process.exit(1);
+    }
+    const value = args[i + 1];
+    if (!value || value.startsWith('-')) {
+      console.error(`错误: ${option} 需要一个参数`);
+      console.error(USAGE);
+      process.exit(1);
+    }
+    if (option === '--level') levelFilter = value;
+    if (option === '--category') categoryFilter = value;
+    i++;
   }
 
   const rules = JSON.parse(fs.readFileSync(RULE_INDEX_PATH, 'utf8'));

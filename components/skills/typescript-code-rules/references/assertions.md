@@ -19,12 +19,12 @@ TypeScript 支持 `<Type>value` 和 `value as Type` 两种断言方式。统一�
 
 ```ts
 // good
-const x: T = { /* ... */ }; // 类型注解总是优于 as 断言
-const y = { /* ... */ } as unknown; // 定义变量时可以断言为 unknown
+interface T {
+  value: string;
+}
+const x: T = { value: 'x' }; // 类型注解总是优于 as 断言
+const y = { value: 'x' } as unknown; // 定义变量时可以断言为 unknown
 const root = document.getElementById('root') as HTMLDivElement;
-
-foo({ /* ... */ } as T); // 变量作为参数使用时可用 as 断言
-new Clazz({ /* ... */ } as T);
 ```
 
 ```ts
@@ -51,10 +51,6 @@ ESLint: `@typescript-eslint/no-unnecessary-type-assertion` · [官方文档](htt
 ```ts
 // good
 const foo = 3 as number;
-
-function bar(x: number | undefined): number {
-  return x!; // x 可能为 undefined，此断言是必要的
-}
 ```
 
 ```ts
@@ -74,7 +70,7 @@ function qux(x: number): number {
 
 ESLint: `@typescript-eslint/no-non-null-assertion` · [官方文档](https://typescript-eslint.io/rules/no-non-null-assertion/)
 
-用 `!` 断言绕过编译器的非空检查，通常意味着类型安全存在隐患。更好的做法是重构代码逻辑（如可选链 + 空值合并），让 TypeScript 能自行理解值何时可能为空。规范版「不使用 ! 声明对象属性非空」与本规则一致，以本规则为准。
+用 `!` 断言绕过编译器的非空检查，通常意味着类型安全存在隐患。更好的做法是重构代码逻辑（如可选链 + 空值合并），让 TypeScript 能自行理解值何时可能为空。本规则先约束“是否应避免断言”；确需保留非空断言时，再按 `non-nullable-type-assertion-style` 统一选择 `!` 或 `as` 的写法，两条规则并不表示应优先添加断言。
 
 ```json
 { "@typescript-eslint/no-non-null-assertion": "warn" }
@@ -84,13 +80,16 @@ ESLint: `@typescript-eslint/no-non-null-assertion` · [官方文档](https://typ
 // good
 interface Example {
   property?: string;
+  bar?: { baz: string };
 }
 
-declare const foo: Example;
-const includesBaz = foo.property?.includes('baz') ?? false;
+function checkExample(foo: Example) {
+  const includesBaz = foo.property?.includes('baz') ?? false;
 
-if (foo.bar && foo.bar.baz) {
-  // ...
+  if (foo.bar?.baz) {
+    // ...
+  }
+  return includesBaz;
 }
 ```
 
@@ -116,9 +115,6 @@ ESLint: `@typescript-eslint/no-extra-non-null-assertion` · [官方文档](https
 
 ```ts
 // good
-const foo: { bar: number } | null = null;
-const bar = foo!.bar;
-
 function baz(bar?: { n: number }) {
   return bar?.n;
 }
@@ -146,8 +142,10 @@ ESLint: `@typescript-eslint/no-non-null-asserted-optional-chain` · [官方文�
 
 ```ts
 // good
-foo?.bar;
-foo?.bar();
+function callFoo(foo: { bar: () => void } | null) {
+  foo?.bar;
+  foo?.bar();
+}
 ```
 
 ```ts
@@ -168,10 +166,13 @@ ESLint: `@typescript-eslint/no-non-null-asserted-nullish-coalescing` · [官方�
 
 ```ts
 // good
-foo ?? bar;
-foo ?? bar!;
-foo!.bazz ?? bar;
-foo() ?? bar;
+interface CallableValue {
+  (): string | undefined;
+  bazz: string | undefined;
+}
+function readValue(foo: CallableValue | undefined, bar: string) {
+  return [foo ?? bar, foo?.bazz ?? bar, foo?.() ?? bar];
+}
 ```
 
 ```ts
@@ -200,8 +201,8 @@ interface Foo {
 }
 
 declare const foo: Foo;
-const isEqualsBar = foo.bar == 'hello';
-const isEqualsNum = (1 + foo.num!) == 2;
+const isEqualsBar = foo.bar === 'hello';
+const isEqualsNum = foo.num === 2;
 ```
 
 ```ts
@@ -211,7 +212,7 @@ const isEqualsBar = foo.bar! == 'hello'; // 容易误读为 !==
 const isEqualsNum = 1 + foo.num! == 2;
 ```
 
-### [推荐] 断言非空时优先使用 ! 而非 as
+### [推荐] 断言非空时优先使用 ! 而非 as 等效类型
 
 ESLint: `@typescript-eslint/non-nullable-type-assertion-style` · [官方文档](https://typescript-eslint.io/rules/non-nullable-type-assertion-style/)
 
@@ -223,13 +224,13 @@ ESLint: `@typescript-eslint/non-nullable-type-assertion-style` · [官方文档]
 
 ```ts
 // good
-const maybe = Math.random() > 0.5 ? '' : undefined;
+const maybe: string | undefined = Math.random() > 0.5 ? '' : undefined;
 const definitely = maybe!;
 ```
 
 ```ts
 // bad
-const maybe = Math.random() > 0.5 ? '' : undefined;
+const maybe: string | undefined = Math.random() > 0.5 ? '' : undefined;
 const definitely = maybe as string;
 const alsoDefinitely = <string>maybe;
 ```
@@ -246,9 +247,9 @@ ESLint: `@typescript-eslint/prefer-as-const` · [官方文档](https://typescrip
 
 ```ts
 // good
-let foo = 'bar' as const;
-let bar: 'bar' = 'bar' as const;
-let baz = 'bar' as string; // 显式标注为通用类型是允许的
+const foo = 'bar' as const;
+const bar: 'bar' = 'bar' as const;
+const baz = 'bar' as string; // 显式标注为通用类型是允许的
 ```
 
 ```ts
@@ -270,13 +271,16 @@ ESLint: `@typescript-eslint/prefer-nullish-coalescing` · [官方文档](https:/
 
 ```ts
 // good
-declare const foo: string | undefined;
-foo ?? 'a string';
-
-declare const a: string | null;
-declare const b: string | null;
-declare const c: string;
-a ?? (b && c); // 与 && 混用时用括号隔离
+function withDefaults(
+  foo: string | undefined,
+  a: string | null,
+  b: string | null,
+  c: string | null,
+) {
+  const first = foo ?? 'a string';
+  const second = a ?? (b && c); // 与 && 混用时用括号隔离
+  return [first, second];
+}
 ```
 
 ```ts
@@ -297,10 +301,20 @@ ESLint: `@typescript-eslint/prefer-optional-chain` · [官方文档](https://typ
 
 ```ts
 // good
-foo?.a?.b?.c;
-foo?.['a']?.b?.c;
-foo?.a?.b?.method?.();
-!foo?.bar;
+interface OptionalLeaf {
+  c?: string;
+  method?: () => void;
+}
+interface OptionalNode {
+  b?: OptionalLeaf | null;
+}
+function readOptional(foo: { a?: OptionalNode | null; bar?: string } | null) {
+  const first = foo?.a?.b?.c;
+  const second = foo?.['a']?.b?.c;
+  foo?.a?.b?.method?.();
+  const hidden = !foo?.bar;
+  return [first, second, hidden];
+}
 ```
 
 ```ts
@@ -334,11 +348,6 @@ ESLint: `@typescript-eslint/ban-ts-comment` · [官方文档](https://typescript
 
 ```ts
 // good
-if (false) {
-  // 编译器会提示不可达代码
-  console.log('hello');
-}
-
 // @ts-expect-error: 这里故意构造类型错误用于测试
 const str: string = 1;
 ```
@@ -366,6 +375,7 @@ ESLint: `@typescript-eslint/ban-tslint-comment` · [官方文档](https://typesc
 ```ts
 // good
 // This is a comment that just happens to mention tslint
+declare function someCode(): void;
 someCode(); // 普通注释中提到 tslint 没问题
 ```
 
@@ -376,36 +386,4 @@ someCode(); // 普通注释中提到 tslint 没问题
 /* tslint:disable:rule1 rule2 rule3 */
 // tslint:disable-next-line
 someCode(); // tslint:disable-line
-```
-
-### [强制] 使用 @ts-expect-error 替代 @ts-ignore
-
-ESLint: `@typescript-eslint/prefer-ts-expect-error` · [官方文档](https://typescript-eslint.io/rules/prefer-ts-expect-error/)
-
-两个指令都能豁免单行 TS 报错，区别在于：`@ts-expect-error` 标记在已经没有错误的代码上时反而会报错，而 `@ts-ignore` 不会。问题修复后遗留的 `@ts-ignore` 会继续掩盖新出现的问题，因此强制使用 `@ts-expect-error`。
-
-```json
-{ "@typescript-eslint/prefer-ts-expect-error": "error" }
-```
-
-```ts
-// good
-// @ts-expect-error
-const str: string = 1;
-
-const isOptionEnabled = (key: string): boolean => {
-  // @ts-expect-error: if key isn't in globalOptions it'll be undefined which is false
-  return !!globalOptions[key];
-};
-```
-
-```ts
-// bad
-// @ts-ignore
-const str: string = 1;
-
-const isOptionEnabled = (key: string): boolean => {
-  // @ts-ignore: if key isn't in globalOptions it'll be undefined which is false
-  return !!globalOptions[key];
-};
 ```
