@@ -1,6 +1,6 @@
 # 枚举规范
 
-本文件覆盖枚举相关规则：禁重复成员值、成员显式初始化、字面量成员值，以及 `const enum` 的规范。
+本文件覆盖枚举相关规则：禁重复成员值、成员显式初始化、字面量成员值，以及结合构建工具和跨包边界选择 `const enum`、普通枚举或 `as const` 对象。
 
 ### [强制] 禁止重复的 enum 成员值
 
@@ -87,7 +87,7 @@ TypeScript 允许枚举值是任意有效的 JS 表达式，但枚举内部是�
 ```ts
 // good
 enum Valid {
-  A,
+  A = 0,
   B = 'TestStr', // 字符串字面量
   C = 4, // 数字字面量
   F = 1 << 2, // 常量位运算（allowBitwiseExpressions）
@@ -109,26 +109,24 @@ enum Invalid {
 }
 ```
 
-### [强制] 使用 const 声明枚举
+### [规范] 根据构建兼容性选择 const enum
 
-`const enum` 在编译后会被完全内联擦除，不生成额外的运行时代码，体积和性能都更好。如果枚举值需要被外部动态遍历，再考虑普通 `enum`。
+`const enum` 可内联枚举值并减少运行时代码，但与 `isolatedModules`、跨包 `.d.ts`、Babel/esbuild 等单文件转译流程存在兼容性约束。项目明确使用完整 `tsc` 类型检查并验证产物兼容时可以采用；否则使用普通 `enum` 或 `as const` 对象联合类型，不把 `const enum` 作为一刀切要求。
 
 ```ts
-// good
-const enum Directions {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT,
-}
+// good：需要运行时遍历、跨包导出或单文件转译时
+const direction = {
+  up: 'up',
+  down: 'down',
+} as const;
+
+type Direction = (typeof direction)[keyof typeof direction];
 ```
 
 ```ts
-// bad
-enum Directions {
-  UP,
-  DOWN,
-  LEFT,
-  RIGHT,
+// good：完整 tsc 流程已验证内联行为时
+const enum Direction {
+  Up = 0,
+  Down = 1,
 }
 ```

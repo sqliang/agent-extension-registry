@@ -1,6 +1,6 @@
 # 条件与循环规范
 
-本文件覆盖条件判断与循环相关规则：`for-of` 优先、switch 穷尽检查、不必要条件/布尔比较/限定符、`+` 与模板字符串的类型限制、`toString` 安全调用、`this` 别名，以及 `===`/`!==`、`Object.keys` 遍历、避免 `return undefined` 的规范。
+本文件覆盖条件、循环和动态代码：`for-of`、switch 穷尽、条件简化、`+` 与模板字符串类型限制、严格相等、花括号、提前返回、对象遍历，以及禁止 `eval`、隐式执行、`Function` 构造函数和 `with`。
 
 ### [推荐] 索引仅用于取数组当前项时使用 for-of 循环
 
@@ -89,7 +89,7 @@ ESLint: `@typescript-eslint/no-unnecessary-condition` · [官方文档](https://
 
 ```ts
 // good
-function head<T>(items: T[]) {
+function head(items: string[]) {
   // items 有可能是空数组，判断是有必要的
   if (items.length) {
     return items[0].toUpperCase();
@@ -163,8 +163,8 @@ ESLint: `@typescript-eslint/no-unnecessary-qualifier` · [官方文档](https://
 ```ts
 // good
 enum A {
-  B,
-  C = B, // 内部直接访问 B
+  B = 1,
+  C = 2,
 }
 ```
 
@@ -191,23 +191,30 @@ ESLint: `@typescript-eslint/restrict-plus-operands` · [官方文档](https://ty
 {
   "@typescript-eslint/restrict-plus-operands": [
     "error",
-    { "checkCompoundAssignments": false, "allowAny": false }
+    {
+      "skipCompoundAssignments": false,
+      "allowAny": false,
+      "allowBoolean": false,
+      "allowNullish": false,
+      "allowNumberAndString": false,
+      "allowRegExp": false
+    }
   ]
 }
 ```
 
 ```ts
 // good
-var foo = parseInt('5.5', 10) + 10;
-var foo = 1n + 1n;
-var foo = 'a' + 'b';
+const parsed = parseInt('5.5', 10) + 10;
+const total = 1n + 1n;
+const label = 'a' + 'b';
 ```
 
 ```ts
 // bad
-var foo = '5.5' + 5; // string + number
-var foo = 1n + 1; // bigint + number
-var fn = (a: any, b: string) => a + b; // allowAny: false，不允许 any
+const label = '5.5' + 5; // string + number
+const total = 1n + 1; // bigint + number
+const fn = (a: any, b: string) => a + b; // allowAny: false，不允许 any
 ```
 
 ### [强制] 模板字符串中只允许安全的类型
@@ -235,9 +242,8 @@ ESLint: `@typescript-eslint/restrict-template-expressions` · [官方文档](htt
 // good
 const arg = 'foo';
 const msg1 = `arg = ${arg}`;
-
-const stringWithKindProp: string & { _kind?: 'MyString' } = 'foo';
-const msg2 = `stringWithKindProp = ${stringWithKindProp}`;
+const count = 2;
+const msg2 = `count = ${count}`;
 ```
 
 ```ts
@@ -249,7 +255,7 @@ declare const obj: object;
 const msg2 = `obj = ${obj}`; // "[object Object]"
 ```
 
-### [建议] toString 只在提供有用信息的对象上调用
+### [推荐] toString 只在提供有用信息的对象上调用
 
 ESLint: `@typescript-eslint/no-base-to-string` · [官方文档](https://typescript-eslint.io/rules/no-base-to-string/)
 
@@ -261,15 +267,15 @@ ESLint: `@typescript-eslint/no-base-to-string` · [官方文档](https://typescr
 
 ```ts
 // good
-'Text:' + true; // 原始类型的 toString 可用
-`Value: ${123}`;
-`Arrays: ${[1, 2, 3]}`;
+const text = `Text: ${true}`;
+const value = `Value: ${123}`;
+const arrays = `Arrays: ${[1, 2, 3].join(',')}`;
 
 // 自定义了有用的 toString
 const objectToString = {
   toString: () => 'Hello, world!',
 };
-`Object: ${objectToString}`;
+const objectText = objectToString.toString();
 ```
 
 ```ts
@@ -306,14 +312,20 @@ setTimeout(function () {
 });
 ```
 
-### [强制] 使用 === 或 !== 判断相等性
+### [强制] 使用 === 或 !== 判断相等性，不用 == 或 !=
+
+ESLint: `eqeqeq` · [官方文档](https://eslint.org/docs/latest/rules/eqeqeq)
 
 `==`/`!=` 会进行隐式类型转换，结果经常违背直觉（如 `'' == 0` 为 true）。一律使用严格相等；判断「非 null 且非 undefined」时显式写出两个条件，语义更清晰。
 
+```json
+{ "eqeqeq": ["error", "always"] }
+```
+
 ```ts
 // good
-if (foo !== null && foo !== undefined) {
-  // ...
+function hasValue(foo: string | null | undefined) {
+  return foo !== null && foo !== undefined;
 }
 ```
 
@@ -324,7 +336,7 @@ if (foo != null) {
 }
 ```
 
-### [建议] 使用 Object.keys/values/entries 遍历对象，不用 for-in
+### [规范] 使用 Object.keys/values/entries 遍历对象，不用 for-in
 
 `for-in` 会遍历原型链上的可枚举属性，需要额外 `hasOwnProperty` 判断；`Object.keys`/`Object.values`/`Object.entries`/`Object.getOwnPropertyNames` 只返回自身属性，语义明确。
 
@@ -344,7 +356,7 @@ for (const key in obj) {
 }
 ```
 
-### [强制] 避免 return undefined，应直接 return
+### [规范] 避免 return undefined，应直接 return
 
 `return undefined` 会给调用方「这个函数有实际返回值」的错觉，直接 `return` 更清晰。
 
@@ -364,4 +376,157 @@ function foo(bar: boolean) {
     return undefined;
   }
 }
+```
+
+### [强制] 控制语句始终使用花括号
+
+ESLint: `curly` · [官方文档](https://eslint.org/docs/latest/rules/curly)
+
+即使控制语句只有一行，也使用块语句，避免后续追加语句时改变控制流。
+
+```json
+{ "curly": ["error", "all"] }
+```
+
+```ts
+// good
+if (ready) {
+  start();
+}
+```
+
+```ts
+// bad
+if (ready) start();
+```
+
+### [推荐] 提前返回后省略多余 else
+
+ESLint: `no-else-return` · [官方文档](https://eslint.org/docs/latest/rules/no-else-return)
+
+分支已经 `return`、`throw` 或结束时，后续逻辑放到外层可以减少嵌套并突出主流程。保留 else 能显著表达对称业务分支时，可结合上下文判断。
+
+```json
+{ "no-else-return": "warn" }
+```
+
+```ts
+// good
+function getName(user: { name: string } | null) {
+  if (!user) {
+    return 'anonymous';
+  }
+  return user.name;
+}
+```
+
+```ts
+// bad
+if (!user) {
+  return 'anonymous';
+} else {
+  return user.name;
+}
+```
+
+### [强制] 禁止直接调用 eval
+
+ESLint: `no-eval` · [官方文档](https://eslint.org/docs/latest/rules/no-eval)
+
+`eval` 会在运行时执行字符串并访问局部作用域，带来安全和可维护性风险。使用数据解析、显式映射或普通函数替代。
+
+```json
+{ "no-eval": "error" }
+```
+
+```ts
+// good
+const value: unknown = JSON.parse(input);
+```
+
+```ts
+// bad
+const value = eval(input);
+```
+
+### [强制] 禁止通过字符串隐式执行代码
+
+ESLint: `@typescript-eslint/no-implied-eval` · [官方文档](https://typescript-eslint.io/rules/no-implied-eval/)
+
+不要把字符串传给 `setTimeout`、`setInterval` 等会执行代码的 API；传入函数并显式声明参数。使用类型感知扩展规则，以覆盖 TypeScript 项目中的全局及对象方法调用。
+
+```json
+{ "@typescript-eslint/no-implied-eval": "error" }
+```
+
+```ts
+// good
+setTimeout(() => {
+  refresh();
+}, 100);
+```
+
+```ts
+// bad
+setTimeout('refresh()', 100);
+```
+
+### [强制] 禁止使用 Function 构造函数动态执行代码
+
+ESLint: `no-new-func` · [官方文档](https://eslint.org/docs/latest/rules/no-new-func)
+
+`new Function` 与 `eval` 一样会执行动态字符串。即使它使用全局作用域，也不能消除注入和审计风险。
+
+```json
+{ "no-new-func": "error" }
+```
+
+```ts
+// good
+const add = (left: number, right: number) => left + right;
+```
+
+```ts
+// bad
+const add = new Function('left', 'right', 'return left + right');
+```
+
+### [强制] 禁止使用 with 语句
+
+ESLint: `no-with` · [官方文档](https://eslint.org/docs/latest/rules/no-with)
+
+`with` 使标识符解析依赖运行时对象，破坏静态可读性，并在严格模式下不可用。使用局部变量或显式属性访问替代。
+
+```json
+{ "no-with": "error" }
+```
+
+```ts
+// good
+const { x, y } = point;
+```
+
+```ts
+// bad
+with (point) {
+  console.log(x, y);
+}
+```
+
+### [规范] 使用 String、Number、Boolean 表达显式类型转换
+
+类型转换应让意图清晰可见，不使用 `+ ''`、一元 `+` 或 `!!` 作为团队默认写法。转换失败、空值和 `NaN` 等边界必须按业务语义处理。
+
+```ts
+// good
+const label = String(value);
+const count = Number(input);
+const enabled = Boolean(input);
+```
+
+```ts
+// bad
+const label = value + '';
+const count = +input;
+const enabled = !!input;
 ```

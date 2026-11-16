@@ -18,7 +18,7 @@ const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const RULE_INDEX_PATH = path.join(SCRIPTS_DIR, 'rule-index.json');
 
 /**
- * 规则的具体配置项（从源规范文档的 JSON 提取），key 为 @typescript-eslint/ 后的短名，
+ * 规则的具体配置项，key 为 @typescript-eslint/ 后的短名或 ESLint 核心规则名，
  * value 为规则配置数组中级别之后的部分。没有配置项的规则不出现在此表中。
  */
 export const RULE_OPTIONS = {
@@ -38,9 +38,12 @@ export const RULE_OPTIONS = {
     { assertionStyle: 'as', objectLiteralTypeAssertions: 'allow-as-parameter' },
   ],
   'consistent-type-definitions': ['interface'],
+  curly: ['all'],
+  eqeqeq: ['always'],
   'explicit-member-accessibility': [{ accessibility: 'no-public' }],
-  'member-delimiter-style': [{ multiline: 'semi', singleline: 'comma' }],
   'naming-convention': [
+    { selector: 'property', filter: '^__', format: null },
+    { selector: 'property', modifiers: ['requiresQuotes'], format: null },
     { selector: 'default', format: ['camelCase'], leadingUnderscore: 'forbid', trailingUnderscore: 'forbid' },
     { selector: 'variableLike', format: ['camelCase', 'UPPER_CASE'], leadingUnderscore: 'forbid', trailingUnderscore: 'forbid' },
     { selector: 'memberLike', format: ['camelCase'], leadingUnderscore: 'forbid', trailingUnderscore: 'forbid' },
@@ -49,13 +52,32 @@ export const RULE_OPTIONS = {
     { selector: 'typeLike', format: ['PascalCase'], leadingUnderscore: 'forbid', trailingUnderscore: 'forbid' },
     { selector: 'enumMember', format: ['PascalCase', 'UPPER_CASE'], leadingUnderscore: 'forbid', trailingUnderscore: 'forbid' },
   ],
+  'no-restricted-types': [
+    {
+      types: {
+        String: { message: '使用小写 string。', fixWith: 'string' },
+        Number: { message: '使用小写 number。', fixWith: 'number' },
+        Boolean: { message: '使用小写 boolean。', fixWith: 'boolean' },
+        Symbol: { message: '使用小写 symbol。', fixWith: 'symbol' },
+        BigInt: { message: '使用小写 bigint。', fixWith: 'bigint' },
+        Object: { message: '使用 object 或更精确的对象类型。', fixWith: 'object' },
+        Function: { message: '使用明确的函数类型。' },
+      },
+    },
+  ],
   'prefer-literal-enum-member': [{ allowBitwiseExpressions: true }],
-  'restrict-plus-operands': [{ checkCompoundAssignments: false, allowAny: false }],
+  'restrict-plus-operands': [
+    {
+      skipCompoundAssignments: false,
+      allowAny: false,
+      allowBoolean: false,
+      allowNullish: false,
+      allowNumberAndString: false,
+      allowRegExp: false,
+    },
+  ],
   'restrict-template-expressions': [
     { allowNumber: true, allowBoolean: true, allowAny: false, allowNullish: false, allowRegExp: true },
-  ],
-  'type-annotation-spacing': [
-    { before: false, after: true, overrides: { arrow: { before: true, after: true } } },
   ],
 };
 
@@ -65,6 +87,7 @@ export const TSCONFIG_RECOMMENDATIONS = {
     strict: true,
     noImplicitReturns: true,
     noUnusedLocals: true,
+    esModuleInterop: true,
     allowSyntheticDefaultImports: true,
   },
 };
@@ -86,7 +109,10 @@ export function buildEslintRules(rules) {
 }
 
 /** 生成 eslint.config.mjs 文件内容。 */
-export function buildEslintConfig(rules) {
+export function buildEslintConfig(rules, {
+  parserImport = '@typescript-eslint/parser',
+  pluginImport = '@typescript-eslint/eslint-plugin',
+} = {}) {
   const rulesObject = buildEslintRules(rules);
   const rulesJson = JSON.stringify(rulesObject, null, 4)
     .split('\n')
@@ -96,8 +122,8 @@ export function buildEslintConfig(rules) {
   return `// 由 typescript-code-rules skill 的 scripts/generate-eslint-config.mjs 生成
 // 依赖：eslint@9、@typescript-eslint/parser、@typescript-eslint/eslint-plugin、typescript
 // 注意：大量规则属于类型感知（type-aware）规则，需要 parserOptions.projectService 指向 tsconfig
-import tsParser from '@typescript-eslint/parser';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from ${JSON.stringify(parserImport)};
+import tsPlugin from ${JSON.stringify(pluginImport)};
 
 export default [
   {
@@ -134,13 +160,22 @@ function main() {
     return;
   }
 
+  if (outIndex === -1 && args.length > 0) {
+    console.error(`错误: 未知选项 ${args[0]}`);
+    process.exit(1);
+  }
+  if (outIndex !== -1 && (outIndex !== 0 || args.length !== 2)) {
+    console.error('错误: 仅支持 --out <dir> 参数');
+    process.exit(1);
+  }
+
   const rules = loadRuleIndex();
   const eslintConfig = buildEslintConfig(rules);
   const tsconfigJson = buildTsconfigRecommendations();
 
   if (outIndex !== -1) {
     const outDir = args[outIndex + 1];
-    if (!outDir) {
+    if (!outDir || outDir.startsWith('-')) {
       console.error('错误: --out 需要一个目录参数');
       process.exit(1);
     }

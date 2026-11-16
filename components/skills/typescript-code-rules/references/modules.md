@@ -1,6 +1,6 @@
 # 模块规范
 
-本文件覆盖模块系统相关规则：禁用 `require` 引入、`namespace`/`module` 关键字、无用的空 `export {}`，以及 ES2015 模块系统、禁用 `/// <reference path>`、同路径单次导入、资源类型声明文件的规范。
+本文件覆盖模块系统：使用 ES2015 `import/export`、禁用 `require` 和 `namespace`、避免无用空导出与 `/// <reference path>`、同路径单次导入、顶层静态导入、命名导出和资源类型声明。`no-require-imports` 统一覆盖赋值形式的 `require`，不再重复配置已废弃的 `no-var-requires`。
 
 ### [强制] 不允许使用 require 引入模块
 
@@ -24,28 +24,6 @@ import lib3 from 'lib3';
 const lib1 = require('lib1');
 const { lib2 } = require('lib2');
 import lib3 = require('lib3');
-```
-
-### [强制] 禁止 var foo = require('foo') 形式的导入
-
-ESLint: `@typescript-eslint/no-var-requires` · [官方文档](https://typescript-eslint.io/rules/no-var-requires/)
-
-禁止使用 `var/let/const foo = require('foo')` 的语句，应当使用 ES6 样式的模块导入替代。本规则与 `no-require-imports` 互补，重点拦截赋值形式的 require。
-
-```json
-{ "@typescript-eslint/no-var-requires": "error" }
-```
-
-```ts
-// good
-import foo from 'foo';
-```
-
-```ts
-// bad
-var foo = require('foo');
-const foo = require('foo');
-let foo = require('foo');
 ```
 
 ### [强制] 禁止命名空间 namespace/module
@@ -83,9 +61,9 @@ ESLint: `@typescript-eslint/no-useless-empty-export` · [官方文档](https://t
 
 ```ts
 // good
-export const value = 'Hello, world!';
-
 import 'some-other-module';
+
+export const value = 'Hello, world!';
 ```
 
 ```ts
@@ -97,9 +75,9 @@ import 'some-other-module';
 export {};
 ```
 
-### [强制] 使用 ECMAScript 2015 标准的模块系统
+### [规范] 使用 ECMAScript 2015 标准的模块系统
 
-模块的导入导出一律使用 ES2015 标准的 `import`/`export`，不混用 CommonJS（`require`/`module.exports`）、AMD 等其他模块体系。与 `no-require-imports`、`no-var-requires` 配套执行。
+模块的导入导出一律使用 ES2015 标准的 `import`/`export`，不混用 CommonJS（`require`/`module.exports`）、AMD 等其他模块体系。与 `no-require-imports` 配套执行。
 
 ```ts
 // good
@@ -119,7 +97,7 @@ import foo = require('foo');
 export = foo;
 ```
 
-### [强制] 不使用 /// <reference path>
+### [规范] 不使用 /// <reference path>
 
 `/// <reference path="..." />` 是 ES2015 模块普及之前的文件间依赖声明方式，路径硬编码、无法被打包工具分析。一律改用 `import`（类型依赖用 `import type`）。
 
@@ -133,13 +111,13 @@ import { foo } from './foo';
 /// <reference path="./foo.ts" />
 ```
 
-### [强制] 对于同一个模块路径仅 import 一次
+### [规范] 对于同一个模块路径仅 import 一次
 
 同一路径的多个 `import` 语句应合并为一条，避免分散的导入让依赖关系难以追踪。
 
 ```ts
 // good
-import React, { PureComponent } from 'react';
+import { PureComponent } from 'react';
 ```
 
 ```ts
@@ -148,7 +126,7 @@ import React from 'react';
 import { PureComponent } from 'react';
 ```
 
-### [建议] 为样式/图片等资源编写类型声明文件
+### [规范] 为样式/图片等资源编写类型声明文件
 
 使用 webpack 等构建工具的项目，在模块中引入样式、图片等非代码资源时，应为资源编写类型声明文件（或使用合适的 loader 自动生成），避免用 `require<any>` 绕过类型检查。
 
@@ -170,4 +148,44 @@ import logo from './logo.png';
 // bad
 const styles = require<any>('./Button.scss');
 const logo = require<string>('./logo.png');
+```
+
+### [规范] 静态 import 位于模块顶部的导入区域
+
+静态依赖集中放在文件顶部，便于分析依赖关系。按需加载使用动态 `import()` 并说明加载边界，不把静态 `import` 声明混入函数或普通语句之间。
+
+```ts
+// good
+import { formatDate } from './date.js';
+
+export function render(date: Date) {
+  return formatDate(date);
+}
+```
+
+```ts
+// bad
+export function render(date: Date) {
+  return formatDate(date);
+}
+
+import { formatDate } from './date.js';
+```
+
+### [规范] 无单一主体值的工具模块使用命名导出
+
+模块提供多个可独立使用的函数或常量时，命名导出能保留调用点语义并支持静态分析。模块确实只有一个主体值时可使用默认导出，不为统一形式而强加默认导出。
+
+```ts
+// good
+export function formatDate(date: Date) { /* ... */ }
+export function parseDate(value: string) { /* ... */ }
+```
+
+```ts
+// bad
+export default {
+  formatDate,
+  parseDate,
+};
 ```
