@@ -51,19 +51,22 @@ function quoteShellArgument(value) {
 
 function resolveNpxImports() {
   const script = `
-const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
-const executable = process.platform === 'win32' ? 'eslint.cmd' : 'eslint';
-const binDirectory = process.env.PATH.split(path.delimiter).find((entry) =>
-  entry.endsWith(path.join('node_modules', '.bin')) && fs.existsSync(path.join(entry, executable))
+const binDirectories = process.env.PATH.split(path.delimiter).filter((entry) =>
+  entry.endsWith(path.join('node_modules', '.bin'))
 );
-if (!binDirectory) throw new Error('Cannot locate the npx node_modules directory');
-const npxRequire = createRequire(path.join(path.dirname(binDirectory), 'eslint', 'package.json'));
-console.log(JSON.stringify({
-  parser: npxRequire.resolve('@typescript-eslint/parser'),
-  plugin: npxRequire.resolve('@typescript-eslint/eslint-plugin'),
-}));
+for (const binDirectory of binDirectories) {
+  try {
+    const npxRequire = createRequire(path.join(path.dirname(binDirectory), 'eslint', 'package.json'));
+    console.log(JSON.stringify({
+      parser: npxRequire.resolve('@typescript-eslint/parser'),
+      plugin: npxRequire.resolve('@typescript-eslint/eslint-plugin'),
+    }));
+    process.exit(0);
+  } catch {}
+}
+throw new Error('Cannot resolve TypeScript ESLint dependencies from npx');
 `;
   const result = spawnSync('npx', ['--yes', ...NPX_PACKAGE_ARGS, 'node', '-e', script], {
     encoding: 'utf8',
