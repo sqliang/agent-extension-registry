@@ -1,6 +1,6 @@
 # 类规范
 
-本文件覆盖类相关规则：成员可访问性标注、成员顺序、readonly 私有成员、返回 this 类型、禁类当命名空间、new/constructor 有效定义，以及每文件一类、省略空构造函数、成员空行、参数属性等规范。
+本文件覆盖类相关规则：可访问性、成员顺序、readonly、返回 this 类型、禁类当命名空间、new/constructor 有效定义、每文件一类、构造函数简化、参数属性，以及使用 `class`/`super` 表达继承。
 
 ### [强制] 明确类成员可访问性，public 不显式声明
 
@@ -15,12 +15,11 @@ ESLint: `@typescript-eslint/explicit-member-accessibility` · [官方文档](htt
 ```ts
 // good
 class Animal {
+  private animalName: string;
+
   constructor(protected breed: string, name: string) {
-    // 参数属性和构造函数
     this.animalName = name;
   }
-
-  private animalName: string; // 属性
 
   get name(): string {
     // get 访问器
@@ -70,16 +69,18 @@ ESLint: `@typescript-eslint/member-ordering` · [官方文档](https://typescrip
 ```ts
 // good
 class Foo {
-  [Z: string]: any; // -> signature
+  [key: string]: unknown; // -> signature
 
-  private C: string; // -> field
-  public D: string; // -> field
-  protected static E: string; // -> field
+  protected static e = 'e'; // -> field
+  d = 'd'; // -> field
+  private readonly c = 'c'; // -> field
 
   constructor() {} // -> constructor
 
-  public static A(): void {} // -> method
-  public B(): void {} // -> method
+  static a(): void {} // -> method
+  b(): string {
+    return this.c;
+  } // -> method
 }
 ```
 
@@ -110,10 +111,10 @@ ESLint: `@typescript-eslint/prefer-readonly` · [官方文档](https://typescrip
 // good
 class Container {
   // 公共成员可能被外部修改
-  public publicMember: boolean;
+  publicMember = false;
 
   // 受保护成员可能被子类修改
-  protected protectedMember: number;
+  protected protectedMember = 0;
 
   // 私有成员会被非构造函数修改
   private modifiedLater = 'unchanged';
@@ -121,7 +122,7 @@ class Container {
   // 只初始化、从不修改，标记 readonly
   private readonly neverModifiedMember = true;
 
-  public mutate() {
+  mutate() {
     this.modifiedLater = 'mutated';
   }
 }
@@ -253,9 +254,11 @@ ESLint: `@typescript-eslint/no-misused-new` · [官方文档](https://typescript
 // good
 declare class C {
   constructor();
+  getValue(): string;
 }
 
 interface I {
+  readonly kind: string;
   new (): C;
 }
 ```
@@ -271,7 +274,7 @@ interface I {
 }
 ```
 
-### [建议] 每个文件中最多声明一个类
+### [规范] 每个文件中最多声明一个类
 
 一个文件一个类可以让模块职责单一、便于检索和代码评审。多个强相关的轻量类型（接口、类型别名）不受此限。
 
@@ -295,7 +298,7 @@ class Modal extends PureComponent<ModalProps, ModalState> {
 }
 ```
 
-### [建议] 构造函数可忽略时应忽略
+### [规范] 构造函数可忽略时应忽略
 
 只做 `super(props)` 透传、没有任何额外逻辑的构造函数是多余的，直接省略让代码更干净。
 
@@ -329,7 +332,7 @@ class Button extends PureComponent<ButtonProps, ButtonState> {
 }
 ```
 
-### [建议] 类成员之间使用空行隔开
+### [规范] 类成员之间使用空行隔开
 
 成员之间用空行分隔，可以让类的结构（属性区、构造器、方法区）一目了然，尤其在成员较多时明显降低阅读成本。
 
@@ -365,7 +368,7 @@ class Button extends PureComponent<ButtonProps, ButtonState> {
 }
 ```
 
-### [建议] 构造函数初始化实例属性时尽量使用参数属性
+### [规范] 构造函数初始化实例属性时尽量使用参数属性
 
 TypeScript 的参数属性（`constructor(private readonly x: X)`）可以在声明参数的同时完成属性声明和赋值，避免「声明属性 + 构造函数赋值」的重复样板。
 
@@ -387,7 +390,7 @@ class AppComponent {
 }
 ```
 
-### [建议] 构造函数中作为属性的参数排列于其他参数前
+### [规范] 构造函数中作为属性的参数排列于其他参数前
 
 把会成为实例属性的参数集中放在参数列表前面，读签名时就能快速区分「这个类依赖什么」与「这次构造还需要什么临时参数」。
 
@@ -416,4 +419,34 @@ class HeroListComponent {
     // ...
   }
 }
+```
+
+### [规范] 使用 class 和 super 表达类与继承
+
+现代 TypeScript 中使用 `class` 定义类，使用 `super` 调用父类构造器和成员。不要在新代码中手工组合构造函数、原型链和 `constructor` 修正。
+
+```ts
+// good
+class BaseNode {
+  setValue(value: string) {
+    // 基类提供可重写的更新行为。
+  }
+}
+
+class TextNode extends BaseNode {
+  textContent = '';
+
+  setValue(value: string) {
+    super.setValue(value);
+    this.textContent = value;
+  }
+}
+```
+
+```ts
+// bad
+TextNode.prototype.setValue = function (value: string) {
+  Node.prototype.setValue.call(this, value);
+  this.textContent = value;
+};
 ```

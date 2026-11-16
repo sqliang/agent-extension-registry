@@ -32,23 +32,38 @@ const e: Array<string> = ['a', 'b'];
 const f: readonly string[] = ['a', 'b'];
 ```
 
-### [强制] 禁用内置类型别名定义类型
+### [强制] 禁用 String/Object/Function 等内置类型别名定义类型
 
-ESLint: `@typescript-eslint/ban-types` · [官方文档](https://typescript-eslint.io/rules/ban-types/)
+ESLint: `@typescript-eslint/no-restricted-types` · [官方文档](https://typescript-eslint.io/rules/no-restricted-types/)
 
-不允许使用 `String`、`Number`、`Boolean`、`Symbol`、`BigInt`、`Object`、`Function`、`{}` 等内置类型别名进行类型定义：大写形式是包装对象类型而非原始类型，`Object`/`{}`/`Function` 过于宽泛且不安全。规范版「使用 string/number/boolean 声明基本类型」「不使用 Object/Function 声明类型」两条由本规则统一覆盖。
+不允许使用 `String`、`Number`、`Boolean`、`Symbol`、`BigInt`、`Object`、`Function` 等内置类型别名进行类型定义：大写形式是包装对象类型而非原始类型，`Object`/`Function` 过于宽泛且不安全。空对象类型 `{}` 由 `no-empty-object-type` 检查。本规则替代已废弃的 `ban-types`。
 
 ```json
-{ "@typescript-eslint/ban-types": "error" }
+{
+  "@typescript-eslint/no-restricted-types": [
+    "error",
+    {
+      "types": {
+        "String": { "message": "使用小写 string。", "fixWith": "string" },
+        "Number": { "message": "使用小写 number。", "fixWith": "number" },
+        "Boolean": { "message": "使用小写 boolean。", "fixWith": "boolean" },
+        "Symbol": { "message": "使用小写 symbol。", "fixWith": "symbol" },
+        "BigInt": { "message": "使用小写 bigint。", "fixWith": "bigint" },
+        "Object": { "message": "使用 object 或更精确的对象类型。", "fixWith": "object" },
+        "Function": { "message": "使用明确的函数类型。" }
+      }
+    }
+  ]
+}
 ```
 
 ```ts
 // good
-const str: string = 'foo';
-const bool: boolean = true;
-const num: number = 1;
-const symb: symbol = Symbol('foo');
-const bigInt: bigint = 1n;
+const str = 'foo';
+const bool = true;
+const num = 1;
+const symb = Symbol('foo');
+const bigInt = 1n;
 const func: () => number = () => 1;
 const lowerObj: object = {};
 const capitalObj: { a: string } = { a: 'string' };
@@ -61,8 +76,7 @@ const str: String = 'foo';
 const bool: Boolean = true;
 const num: Number = 1;
 const lowerObj: Object = {};
-const curly1: {} = 1;
-const curly2: {} = { a: 'string' };
+const curly: {} = { a: 'string' };
 ```
 
 ### [推荐] 不允许使用 any 类型
@@ -77,8 +91,8 @@ ESLint: `@typescript-eslint/no-explicit-any` · [官方文档](https://typescrip
 
 ```ts
 // good
-const age: number = 17;
-const ages: number[] = [17];
+const age = 17;
+const ages = [17];
 const identity = <T>(x: T) => x;
 
 function greet(): string {
@@ -145,7 +159,6 @@ ESLint: `@typescript-eslint/no-redundant-type-constituents` · [官方文档](ht
 
 ```ts
 // good
-type UnionAny = any;
 type UnionUnknown = unknown;
 type UnionStringLiteral = string;
 type IntersectionUnknown = string;
@@ -180,7 +193,6 @@ function noop(): void {}
 
 async function promiseMeSomething(): Promise<void> {}
 
-type stillVoid = void | never;
 ```
 
 ```ts
@@ -307,74 +319,45 @@ function foo(example: { (): number }): number {
 }
 ```
 
-### [强制] 对象类型成员使用一致的分隔符
+### [规范] 对象类型成员使用一致的分隔符
 
-ESLint: `@typescript-eslint/member-delimiter-style` · [官方文档](https://typescript-eslint.io/rules/member-delimiter-style/)
-
-interface 和 type 的成员可以用分号、逗号或换行分隔，应统一风格：多行用分号且最后一个成员也加分号，单行用逗号且最后一个成员省略。此类格式问题更推荐交给 Formatter 自动处理。
-
-```json
-{ "@typescript-eslint/member-delimiter-style": ["error", { "multiline": "semi", "singleline": "comma" }] }
-```
+interface 和 type 的成员可以用分号、逗号或换行分隔，应在项目内保持统一。原来的 `member-delimiter-style` 属于已废弃的排版规则，本 Skill 不再生成对应 ESLint 配置，交由项目 Formatter 处理。
 
 ```ts
-// good
+// good：本项目选择多行分号、单行逗号时
 interface Foo {
   name: string;
   greet(): string;
 }
 
-type Bar = { name: string, greet(): string }
+interface Bar {
+  name: string;
+  greet(): string;
+}
 ```
 
 ```ts
-// bad
+// bad：在同一个项目中混用不同约定
 interface Foo {
-  name: string // 缺少分号
-  greet(): string
-}
-
-interface Bar {
-  name: string, // 多行误用逗号
+  name: string
   greet(): string,
 }
 ```
 
-### [强制] 类型声明前后空格保持一致
+### [规范] 类型声明前后空格保持一致
 
-ESLint: `@typescript-eslint/type-annotation-spacing` · [官方文档](https://typescript-eslint.io/rules/type-annotation-spacing/)
-
-类型标注的空格风格统一可以提高可读性：冒号前不加空格、冒号后加一个空格；箭头函数返回类型的箭头前后各一个空格。
-
-```json
-{
-  "@typescript-eslint/type-annotation-spacing": [
-    "error",
-    { "before": false, "after": true, "overrides": { "arrow": { "before": true, "after": true } } }
-  ]
-}
-```
+类型标注的空格风格统一可以提高可读性。原来的 `type-annotation-spacing` 属于已废弃的排版规则，本 Skill 不再生成对应 ESLint 配置，交由项目 Formatter 处理。
 
 ```ts
-// good
-let foo: string = 'bar';
-
-function baz(): string {
-  return 'bar';
-}
-
-let fn: () => string = () => 'bar';
+// good：冒号前不加空格、冒号后加一个空格时
+const foo = 'bar';
+const fn: () => string = () => 'bar';
 ```
 
 ```ts
 // bad
-let foo:string = 'bar';
-
-function baz() :string {
-  return 'bar';
-}
-
-let fn: () => string = ()=>'bar';
+const foo:string = 'bar';
+const fn: () => string = ()=>'bar';
 ```
 
 ### [强制] 重载函数/方法的声明放在一起
@@ -436,7 +419,7 @@ const tuple1 = ['a', 1, 'b'] as const;
 foo(...tuple1);
 
 declare function bar(arg1: unknown, arg2: Set<unknown>, arg3: unknown[]): void;
-bar(1 as any, new Set<any>(), [] as any[]); // 形参是 unknown，允许
+bar(1, new Set<unknown>(), []); // 形参是 unknown，允许安全值传入
 ```
 
 ```ts
@@ -471,7 +454,7 @@ const [y] = [1];
 function foo(a = 1) {}
 
 class Foo {
-  constructor(private a = 1) {}
+  constructor(private readonly a = 1) {}
 }
 
 const set: Set<string> = new Set<string>();
@@ -540,11 +523,13 @@ TypeScript 支持同名声明合并，但类和接口之间的合并不安全：
 
 ```ts
 // good
-interface Foo {}
-class Bar implements Foo {}
+interface Foo {
+  nums: number[];
+}
 
-namespace Baz {}
-namespace Baz {}
+class Bar implements Foo {
+  nums: number[] = [];
+}
 ```
 
 ```ts
@@ -654,7 +639,9 @@ ESLint: `@typescript-eslint/no-unnecessary-type-arguments` · [官方文档](htt
 
 ```ts
 // good
-class C<T = number> {}
+class C<T = number> {
+  value?: T;
+}
 new C();
 
 // 指定为非默认值 string 是有必要的
@@ -684,12 +671,18 @@ ESLint: `@typescript-eslint/no-unnecessary-type-constraint` · [官方文档](ht
 
 ```ts
 // good
-interface Foo<T> {}
-type Bar<T> = {};
-class Baz<T> {
-  qux<U>() {}
+interface Foo<T> {
+  value: T;
 }
-const Quux = <T>() => {};
+interface Bar<T> {
+  value: T;
+}
+class Baz<T> {
+  qux<U>(value: U): U {
+    return value;
+  }
+}
+const quux = <T>(value: T): T => value;
 ```
 
 ```ts
@@ -702,9 +695,15 @@ class BazAny<T extends any> {
 const QuuxAny = <T extends any>() => {};
 ```
 
-### [强制] 接口不应为空
+### [强制] 禁止空对象类型和无成员接口
 
-空接口没有表达任何契约，要么删除，要么补上应有的成员；如果只是想标记「任意非空对象」，使用 `object` 或 `Record<string, unknown>`。
+ESLint: `@typescript-eslint/no-empty-object-type` · [官方文档](https://typescript-eslint.io/rules/no-empty-object-type/)
+
+`{}` 表示任何非 null/undefined 值，并不表示“空对象”；无成员接口也没有表达契约。需要对象值时使用精确类型、`object` 或 `Record<string, unknown>`，需要扩展现有接口时按规则配置保留有意义的继承形式。
+
+```json
+{ "@typescript-eslint/no-empty-object-type": "error" }
+```
 
 ```ts
 // good
@@ -718,4 +717,5 @@ type AnyObject = Record<string, unknown>;
 ```ts
 // bad
 interface ButtonProps {}
+type AnyObject = {};
 ```
